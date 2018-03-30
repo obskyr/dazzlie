@@ -1,15 +1,15 @@
 .PHONY: all clean
 
-PROGRAMS = dazzlie
+PROGRAM = dazzlie
 
-all: $(PROGRAMS)
+all: $(PROGRAM)
 
 clean:
-	rm -f $(PROGRAMS)
+	rm -f $(PROGRAM)
 
 CRYSTAL_FILES := $(shell find src/ lib/ -type f -name "*.cr" 2> /dev/null)
 
-$(PROGRAMS): %: src/%.cr lib $(CRYSTAL_FILES)
+$(PROGRAM): src/main.cr lib $(CRYSTAL_FILES)
 	crystal build -o $@ $<
 
 lib: shard.yml shard.lock
