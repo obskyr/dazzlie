@@ -1,0 +1,10 @@
+name: dazzlie
+version: 0.1.0-dev
+
+authors:
+  - obskyr <powpowd@gmail.com>
+
+dependencies:
+  stumpy_png:
+    github: stumpycr/stumpy_png
+    version: ~> 4.3

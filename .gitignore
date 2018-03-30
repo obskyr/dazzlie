@@ -1,0 +1,7 @@
+# Output files.
+/dazzlie
+
+# Crystal stuff.
+/doc/
+/lib/
+/.shards/
