@@ -1,6 +1,8 @@
 require "option_parser"
 require "./dazzlie"
 
+include Dazzlie
+
 def error_out(reason)
     STDERR.puts "Error: #{reason}"
     exit 1
