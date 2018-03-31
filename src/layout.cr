@@ -5,10 +5,10 @@ module Dazzlie
     end
 
     class LayoutLevel
-        property direction : Direction
-        property num : Int32?
-        property px_width  : Int32
-        property px_height : Int32
+        getter direction : Direction
+        getter num : Int32?
+        getter px_width  : Int32
+        getter px_height : Int32
 
         def is_horizontal
             return @direction == Direction::Horizontal

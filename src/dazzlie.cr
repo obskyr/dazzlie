@@ -1,6 +1,7 @@
 # Decode tile graphics to PNG.
 
 require "stumpy_png"
+require "./format_base"
 require "./formats"
 require "./layout"
 
@@ -20,14 +21,18 @@ module Dazzlie
     end
 
     class Transcoder
+        @tile_format : TileFormat
         @top_level : ChunkLevel
 
-        def initialize(layout : String, @bit_depth : Int32)
-            raise GraphicsConversionError.new "Invalid bit depth." if !(1 <= bit_depth <= 2)
+        def initialize(format : String, layout : String)
+            if !FORMATS.has_key? format
+                raise GraphicsConversionError.new %(Format "#{format}" does not exist.)
+            end
             if !/^\s*((?:H|V)[0-9]*\s*)+$/i.match layout
                 raise GraphicsConversionError.new "Invalid layout string format."
             end
-            tile_format = @bit_depth == 2 ? FORMATS["gb_2bpp"].new : FORMATS["gb_1bpp"].new
+
+            @tile_format = FORMATS[format].new
 
             matches = layout.scan /(H|V)([0-9]*)/i
             prev_level = nil
@@ -39,7 +44,7 @@ module Dazzlie
                     raise GraphicsConversionError.new "Invalid layout. 0 is not a valid length."
                 end
 
-                prev_level = ChunkLevel.new direction, num, prev_level || tile_format
+                prev_level = ChunkLevel.new direction, num, prev_level || @tile_format
             end
 
             @top_level = prev_level.not_nil!
@@ -62,14 +67,14 @@ module Dazzlie
                 original_from = from
                 if num_tiles
                     num_pixels = 8 * 8 * num_tiles
-                    num_bytes = @bit_depth * (num_pixels / 8)
+                    num_bytes = @tile_format.bytes_per_tile * num_tiles
                     bytes = Bytes.new num_bytes
                     bytes_read = original_from.read bytes
                     
                     # If the bytes read stop in the middle of a tile, the tile
                     # decoder will still be able to read that tile. Therefore,
                     # missing a few bytes of the last tile is acceptable.
-                    readable_bytes = round_up bytes_read, @bit_depth * 8
+                    readable_bytes = round_up bytes_read, @tile_format.bytes_per_tile
                     if readable_bytes < num_bytes
                         raise GraphicsConversionError.new "There are less than #{num_tiles} tiles in the input data."
                     end
@@ -79,7 +84,7 @@ module Dazzlie
                     from = IO::Memory.new
                     IO.copy original_from, from
                     bytes_read = from.tell
-                    num_pixels = ((bytes_read + @bit_depth - 1) / @bit_depth) * 8
+                    num_pixels = (bytes_read + @tile_format.bytes_per_tile - 1) / @tile_format.bytes_per_tile
 
                     if num_pixels == 0
                         raise GraphicsConversionError.new "No data to decode."
@@ -103,8 +108,8 @@ module Dazzlie
         end
     end
 
-    def decode(from, to, layout, bit_depth, num_tiles)
-        transcoder = Transcoder.new layout, bit_depth
+    def decode(from, to, layout, format, num_tiles)
+        transcoder = Transcoder.new format, layout
         transcoder.decode(from, to, num_tiles)
     end
 end

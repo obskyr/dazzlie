@@ -13,15 +13,16 @@ private PALETTE_1BPP = {
 }.map { |c| StumpyPNG::RGBA.from_rgb_n(c[0], c[1], c[2], 8) }
 
 private class GameBoyTileFormat < Dazzlie::TileFormat
-    @px_width  = 8
-    @px_height = 8
+    @@px_width  = 8
+    @@px_height = 8
 end
 
 private class TileFormat_Gb2Bpp < GameBoyTileFormat
     @@description = "Game Boy (Color) tiles at 2 bits per pixel."
+    @@bytes_per_tile = 16
 
     def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
-        tile = Bytes.new 2 * 8 # 2 bytes per row * 8 rows
+        tile = Bytes.new @@bytes_per_tile
         bytes_read = from.read tile
         return 0 if bytes_read == 0
         tile_io = IO::Memory.new tile[0, bytes_read]
@@ -44,9 +45,10 @@ end
 
 private class TileFormat_Gb1Bpp < GameBoyTileFormat
     @@description = "Game Boy (Color) tiles at 1 bit per pixel."
+    @@bytes_per_tile = 8
 
     def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
-        tile = Bytes.new 1 * 8 # 1 byte per row * 8 rows
+        tile = Bytes.new @@bytes_per_tile
         bytes_read = from.read tile
         return 0 if bytes_read == 0
         tile_io = IO::Memory.new tile[0, bytes_read]

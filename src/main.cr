@@ -3,8 +3,10 @@ require "./dazzlie"
 
 include Dazzlie
 
-def error_out(reason)
-    STDERR.puts "Error: #{reason}"
+def error_out(reason : String)
+    header = "Error: "
+    reason = reason.gsub('\n', "\n#{" " * header.size}")
+    STDERR.puts "#{header}#{reason}"
     exit 1
 end
 
@@ -14,10 +16,10 @@ out_path = nil
 offset = 0
 num_tiles = nil
 
-bit_depth = 2
+format = nil
+layout = nil
 width = nil
 height = nil
-layout = nil
 
 ACTUAL_PROGRAM_NAME = PROGRAM_NAME.split('/')[-1]
 USAGE_LINE = "Usage: #{ACTUAL_PROGRAM_NAME} <-f format> <-l layout | -W width | -H height> [other options...]"
@@ -25,7 +27,7 @@ USAGE_LINE = "Usage: #{ACTUAL_PROGRAM_NAME} <-f format> <-l layout | -W width | 
 MAX_FORMAT_NAME_LENGTH = FORMATS.keys.map{ |s| s.size }.max
 FORMATS_INFO = "Formats:\n" + FORMATS.each.join '\n' do |name, cls|
     name = name + ":"
-    "    #{name.ljust(MAX_FORMAT_NAME_LENGTH + 1)} #{cls.description}"
+    "    #{name.ljust(MAX_FORMAT_NAME_LENGTH + 1)} #{cls.description} Tiles are #{cls.px_width}x#{cls.px_height} pixels."
 end
 
 LAYOUT_INFO =
@@ -98,13 +100,23 @@ OptionParser.parse! do |parser|
     end
     
     parser.on(
-        "-d DEPTH", "--depth DEPTH",
-        "Set the bit depth (either 1 or 2; default 2)."
-    ) do |d|
-        bit_depth = d.to_i
-        raise ArgumentError.new "Invalid bit depth." if !(1 <= bit_depth <= 2)
+        "-f FORMAT", "--format FORMAT",
+        %(Set the graphics format to use - see the "Formats" section.)
+    ) do |f|
+        format = f
+        raise ArgumentError.new "Nonexistent format" if !FORMATS.has_key? format
     rescue ArgumentError
-        error_out "Invalid bit depth. Must be either 1 or 2."
+        error_out %(The format "#{f}" doesn't exist. ) \
+                  %(Run "#{ACTUAL_PROGRAM_NAME} -h" for a list of available formats!)
+    end
+
+    parser.on(
+        "-l LAYOUT", "--layout LAYOUT",
+        %(Set the layout of the tiles - see the "Layout" section.)
+    ) do |l|
+        layout = l
+    rescue ArgumentError
+        error_out %(Invalid layout. Run "#{ACTUAL_PROGRAM_NAME} -h" for help!)
     end
 
     parser.on(
@@ -124,15 +136,6 @@ OptionParser.parse! do |parser|
     rescue ArgumentError
         error_out "Invalid height. Set it to a number!"
     end
-
-    parser.on(
-        "-l LAYOUT", "--layout LAYOUT",
-        %(Set the layout of the tiles - see the "Layout" section.)
-    ) do |l|
-        layout = l
-    rescue ArgumentError
-        error_out %(Invalid layout. Run "#{ACTUAL_PROGRAM_NAME} -h" for help!)
-    end
     
     parser.missing_option do |option|
         error_out %(#{option} is missing an argument. Run "#{ACTUAL_PROGRAM_NAME} -h" for help!)
@@ -142,8 +145,14 @@ OptionParser.parse! do |parser|
     end
 end
 
+if !format
+    error_out %(No format set! ) \
+              %(Set "-f" or "--format" to the graphics format you're working with.\n) \
+              %(Run "#{ACTUAL_PROGRAM_NAME} --help" for a list of formats.")
+end
+
 if !(layout || width || height)
-    error_out %(No dimensions set! Sey either "--layout", "--width", or "--height".)
+    error_out %(No dimensions set! Set either "--layout", "--width", or "--height".)
 end
 
 if layout && (width || height) 
@@ -189,9 +198,9 @@ rescue IO::EOFError
 end
 
 begin
-    decode(in_io, out_io, layout.not_nil!, bit_depth, num_tiles)
-rescue e: GraphicsConversionError
-    error_out e.message
+    decode(in_io, out_io, layout.not_nil!, format.not_nil!, num_tiles)
+rescue e : GraphicsConversionError
+    error_out e.message.not_nil!
 end
 
 in_io.close  if in_path
