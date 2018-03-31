@@ -19,10 +19,16 @@ width = nil
 height = nil
 layout = nil
 
-program_name = PROGRAM_NAME.split('/')[-1]
-usage_line = "Usage: #{program_name} <-l layout | -W width | -H height> [other options...]"
+ACTUAL_PROGRAM_NAME = PROGRAM_NAME.split('/')[-1]
+USAGE_LINE = "Usage: #{ACTUAL_PROGRAM_NAME} <-f format> <-l layout | -W width | -H height> [other options...]"
 
-details =
+MAX_FORMAT_NAME_LENGTH = FORMATS.keys.map{ |s| s.size }.max
+FORMATS_INFO = "Formats:\n" + FORMATS.each.join '\n' do |name, cls|
+    name = name + ":"
+    "    #{name.ljust(MAX_FORMAT_NAME_LENGTH + 1)} #{cls.description}"
+end
+
+LAYOUT_INFO =
 %(Layout:
     In order to lay tiles out as you want, you can describe layouts using
     the "-l" / "--layout" option. Set it to a list of direction-length pairs.
@@ -51,21 +57,23 @@ details =
     the layouts "H[width] V" and "V[height] H", respectively.
 )
 
+DETAILS = [FORMATS_INFO, LAYOUT_INFO].join("\n\n")
+
 if ARGV.size == 0
-    STDERR.puts %(#{usage_line}\nRun "#{program_name} --help" for more options and info!)
+    STDERR.puts %(#{USAGE_LINE}\nRun "#{ACTUAL_PROGRAM_NAME} --help" for more options and info!)
     exit 1
 end
 
 OptionParser.parse! do |parser|
-    parser.banner = "#{usage_line}\n\nArguments:"
+    parser.banner = "#{USAGE_LINE}\n\nArguments:"
     
     parser.on("-h", "--help", "Show this help and exit.\n") do
         puts parser
         puts
-        puts details
+        puts DETAILS
         exit 0
     end
-    
+
     parser.on("-i PATH", "Input file. If unspecified, " \
               "data will be read from stdin.") { |i| in_path = i }
     parser.on("-o PATH", "Output PNG file. If unspecified, " \
@@ -123,14 +131,14 @@ OptionParser.parse! do |parser|
     ) do |l|
         layout = l
     rescue ArgumentError
-        error_out %(Invalid layout. Run "#{program_name} -h" for help!)
+        error_out %(Invalid layout. Run "#{ACTUAL_PROGRAM_NAME} -h" for help!)
     end
     
     parser.missing_option do |option|
-        error_out %(#{option} is missing an argument. Run "#{program_name} -h" for help!)
+        error_out %(#{option} is missing an argument. Run "#{ACTUAL_PROGRAM_NAME} -h" for help!)
     end
     parser.invalid_option do |option|
-        error_out %(Invalid option: #{option}. Run "#{program_name} -h" for help!)
+        error_out %(Invalid option: #{option}. Run "#{ACTUAL_PROGRAM_NAME} -h" for help!)
     end
 end
 
