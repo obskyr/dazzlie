@@ -1,19 +1,8 @@
 # Decode tile graphics to PNG.
 
 require "stumpy_png"
-
-# These default palettes need to be put together with the formats.
-private PALETTE_2BPP = {
-    {0xFF, 0xFF, 0xFF},
-    {0xA9, 0xA9, 0xA9},
-    {0x55, 0x55, 0x55},
-    {0x00, 0x00, 0x00}
-}.map { |c| StumpyPNG::RGBA.from_rgb_n(c[0], c[1], c[2], 8) }
-
-private PALETTE_1BPP = {
-    {0xFF, 0xFF, 0xFF},
-    {0x00, 0x00, 0x00}
-}.map { |c| StumpyPNG::RGBA.from_rgb_n(c[0], c[1], c[2], 8) }
+require "./formats"
+require "./layout"
 
 private def round_up(num, multiple)
     return num if multiple == 0
@@ -23,11 +12,6 @@ private def round_up(num, multiple)
 end
 
 module Dazzlie
-    enum Direction
-        Horizontal
-        Vertical
-    end
-
     # Shim until the Crystal version after 0.24.2 comes out.
     class NotImplementedError < Exception
     end
@@ -43,7 +27,7 @@ module Dazzlie
             if !/^\s*((?:H|V)[0-9]*\s*)+$/i.match layout
                 raise GraphicsConversionError.new "Invalid layout string format."
             end
-            tile_level = @bit_depth == 2 ? TileLevel2Bpp.new : TileLevel1Bpp.new
+            tile_format = @bit_depth == 2 ? FORMATS["gb_2bpp"].new : FORMATS["gb_1bpp"].new
 
             matches = layout.scan /(H|V)([0-9]*)/i
             prev_level = nil
@@ -55,7 +39,7 @@ module Dazzlie
                     raise GraphicsConversionError.new "Invalid layout. 0 is not a valid length."
                 end
 
-                prev_level = ChunkLevel.new direction, num, prev_level || tile_level
+                prev_level = ChunkLevel.new direction, num, prev_level || tile_format
             end
 
             @top_level = prev_level.not_nil!
@@ -116,124 +100,6 @@ module Dazzlie
             @top_level.decode from, canvas, num_tiles, 0, 0
 
             StumpyPNG.write canvas, to
-        end
-    end
-
-    class LayoutLevel
-        property direction : Direction
-        property num : Int32?
-        property px_width  : Int32
-        property px_height : Int32
-
-        def is_horizontal
-            return @direction == Direction::Horizontal
-        end
-
-        def is_vertical
-            return @direction == Direction::Vertical
-        end
-
-        def initialize
-            # These don't actually do anything except make the compiler happy.
-            # Gotta initialize those non-nilable values, you know.
-            @direction = Direction::Horizontal
-            @px_width  = 0
-            @px_height = 0
-            raise NotImplementedError.new
-        end
-
-        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
-            raise NotImplementedError.new
-        end
-    end
-
-    class ChunkLevel < LayoutLevel
-        def initialize(@direction : Direction, num : Int32?, @child : LayoutLevel)
-            @num = num
-
-            if !@child.num
-                raise GraphicsConversionError.new %("Invalid layout. Infinite layout levels ("H" or "V") must be at the end.)
-            end
-
-            horizontal_children = num ? (is_horizontal ? num : 1) : 1
-            vertical_children   = num ? (is_vertical   ? num : 1) : 1
-            @px_width  = @child.px_width  * horizontal_children
-            @px_height = @child.px_height * vertical_children
-        end
-
-        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
-            total_decoded = 0
-            
-            # It feels like there should be a better way to make an infinite
-            # iterator than `1.times.cycle`, but `loop` can't be assigned...
-            times = (num = @num) ? num.times : 1.times.cycle
-            times.each do
-                tiles_left = num_tiles ? num_tiles - total_decoded : nil
-                cur_decoded = @child.decode(from, canvas, tiles_left, x, y)
-                break if cur_decoded == 0
-
-                x += @child.px_width  if is_horizontal
-                y += @child.px_height if is_vertical
-
-                total_decoded += cur_decoded
-                break if total_decoded == num_tiles
-            end
-
-            return total_decoded
-        end
-    end
-
-    class TileLevel < LayoutLevel
-        @direction = Direction::Horizontal
-        @num = 1
-        @px_width  = 8
-        @px_height = 8
-
-        def initialize
-        end
-    end
-
-    class TileLevel2Bpp < TileLevel
-        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
-            tile = Bytes.new 2 * 8 # 2 bytes per row * 8 rows
-            bytes_read = from.read tile
-            return 0 if bytes_read == 0
-            tile_io = IO::Memory.new tile[0, bytes_read]
-
-            (y...y + 8).each do |cur_y|
-                # If data stops in the middle of a tile, the rest of the tile
-                # should still be filled with something. 0x00, for example.
-                byte_1 = tile_io.read_byte || 0x00
-                byte_2 = tile_io.read_byte || 0x00
-
-                (x...x + 8).each.zip((0...8).reverse_each).each do |cur_x, low_shift_distance|
-                    i = ((byte_1 >> low_shift_distance) & 0b1) | (((byte_2 >> low_shift_distance) << 1) & 0b10)
-                    canvas[cur_x, cur_y] = PALETTE_2BPP[i]
-                end
-            end
-
-            return 1
-        end
-    end
-
-    class TileLevel1Bpp < TileLevel
-        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
-            tile = Bytes.new 1 * 8 # 1 byte per row * 8 rows
-            bytes_read = from.read tile
-            return 0 if bytes_read == 0
-            tile_io = IO::Memory.new tile[0, bytes_read]
-            
-            (y...y + 8).each do |cur_y|
-                # Same as with 2BPP - nonexistent data should be filled out.
-                byte = tile_io.read_byte || 0x00
-
-                (x...x + 8).each.zip((0...8).reverse_each).each do |cur_x, shift_distance|
-                    i = (byte >> shift_distance) & 0b1
-                    canvas[cur_x, cur_y] = PALETTE_1BPP[i]
-                end
-            end
-
-            return 1
         end
     end
 
