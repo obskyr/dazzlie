@@ -56,9 +56,30 @@ private class TileFormat_Gb1Bpp < GameBoyTileFormat
     define_gb_decode 8, 1
 end
 
+private class GameBoyRowFormat < Dazzlie::TileFormat
+    @@px_width  = 8
+    @@px_height = 1
+end
+
+private class TileFormat_GbRow2Bpp < GameBoyRowFormat
+    @@description = "Game Boy (Color) sub-tile pixel rows at 2 bits per pixel."
+    @@bytes_per_tile = 2
+
+    define_gb_decode 1, 2
+end
+
+private class TileFormat_GbRow1Bpp < GameBoyRowFormat
+    @@description = "Game Boy (Color) sub-tile pixel rows at 1 bit per pixel."
+    @@bytes_per_tile = 1
+
+    define_gb_decode 1, 1
+end
+
 module Dazzlie
     module Formats
         Gb2Bpp = TileFormat_Gb2Bpp
         Gb1Bpp = TileFormat_Gb1Bpp
+        GbRow2Bpp = TileFormat_GbRow2Bpp
+        GbRow1Bpp = TileFormat_GbRow1Bpp
     end
 end
