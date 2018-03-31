@@ -84,7 +84,8 @@ module Dazzlie
                     from = IO::Memory.new
                     IO.copy original_from, from
                     bytes_read = from.tell
-                    num_pixels = (bytes_read + @tile_format.bytes_per_tile - 1) / @tile_format.bytes_per_tile
+                    num_tiles = (bytes_read + @tile_format.bytes_per_tile - 1) / @tile_format.bytes_per_tile
+                    num_pixels = num_tiles * @tile_format.px_width * @tile_format.px_height
 
                     if num_pixels == 0
                         raise GraphicsConversionError.new "No data to decode."
