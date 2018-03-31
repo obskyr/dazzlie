@@ -17,6 +17,14 @@ module Dazzlie
             @px_height = @@px_height
         end
 
+        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32, x : Int32, y : Int32)
+            return self.decode from, canvas, x, y
+        end
+
+        def decode(from : IO, canvas : StumpyPNG::Canvas, x : Int32, y : Int32)
+            raise NotImplementedError.new
+        end
+
         def self.description
             return @@description
         end

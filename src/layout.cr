@@ -27,7 +27,7 @@ module Dazzlie
             raise NotImplementedError.new
         end
 
-        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
+        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32, x : Int32, y : Int32)
             raise NotImplementedError.new
         end
     end
@@ -46,14 +46,14 @@ module Dazzlie
             @px_height = @child.px_height * vertical_children
         end
 
-        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
+        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32, x : Int32, y : Int32)
             total_decoded = 0
             
             # It feels like there should be a better way to make an infinite
             # iterator than `1.times.cycle`, but `loop` can't be assigned...
             times = (num = @num) ? num.times : 1.times.cycle
             times.each do
-                tiles_left = num_tiles ? num_tiles - total_decoded : nil
+                tiles_left = num_tiles - total_decoded
                 cur_decoded = @child.decode(from, canvas, tiles_left, x, y)
                 break if cur_decoded == 0
 

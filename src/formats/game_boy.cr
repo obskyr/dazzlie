@@ -21,7 +21,7 @@ private class TileFormat_Gb2Bpp < GameBoyTileFormat
     @@description = "Game Boy (Color) tiles at 2 bits per pixel."
     @@bytes_per_tile = 16
 
-    def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
+    def decode(from : IO, canvas : StumpyPNG::Canvas, x : Int32, y : Int32)
         tile = Bytes.new @@bytes_per_tile
         bytes_read = from.read tile
         return 0 if bytes_read == 0
@@ -47,7 +47,7 @@ private class TileFormat_Gb1Bpp < GameBoyTileFormat
     @@description = "Game Boy (Color) tiles at 1 bit per pixel."
     @@bytes_per_tile = 8
 
-    def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32?, x : Int32, y : Int32)
+    def decode(from : IO, canvas : StumpyPNG::Canvas, x : Int32, y : Int32)
         tile = Bytes.new @@bytes_per_tile
         bytes_read = from.read tile
         return 0 if bytes_read == 0

@@ -63,6 +63,7 @@ module Dazzlie
                 end
                 width  = @top_level.px_width
                 height = @top_level.px_height
+                num_tiles = (width * height) / (@tile_format.px_width * @tile_format.px_height)
             else
                 original_from = from
                 if num_tiles
