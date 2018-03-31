@@ -58,16 +58,17 @@ module Dazzlie
             # if not, it's just the layout's width and height, but if it does,
             # the dimensions are based on how much data there is.
             if @top_level.num
-                if num_tiles && (@top_level.px_width / 8) * (@top_level.px_height / 8) < num_tiles
-                    raise GraphicsConversionError.new "Layout dimensions too small to fit #{num_tiles} tiles."
-                end
                 width  = @top_level.px_width
                 height = @top_level.px_height
-                num_tiles = (width * height) / (@tile_format.px_width * @tile_format.px_height)
+                max_num_tiles = (width * height) / (@tile_format.px_width * @tile_format.px_height)
+                if num_tiles && num_tiles > max_num_tiles
+                    raise GraphicsConversionError.new "Layout dimensions too small to fit #{num_tiles} tiles."
+                end
+                num_tiles = max_num_tiles if !num_tiles
             else
                 original_from = from
                 if num_tiles
-                    num_pixels = 8 * 8 * num_tiles
+                    num_pixels = @tile_format.px_width * @tile_format.px_height * num_tiles
                     num_bytes = @tile_format.bytes_per_tile * num_tiles
                     bytes = Bytes.new num_bytes
                     bytes_read = original_from.read bytes
