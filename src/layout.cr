@@ -1,10 +1,10 @@
 module Dazzlie
-    enum Direction
+    private enum Direction
         Horizontal
         Vertical
     end
 
-    class LayoutLevel
+    private class LayoutLevel
         getter direction : Direction
         getter num : Int32?
         getter px_width  : Int32
@@ -32,7 +32,7 @@ module Dazzlie
         end
     end
 
-    class ChunkLevel < LayoutLevel
+    private class ChunkLevel < LayoutLevel
         def initialize(@direction : Direction, num : Int32?, @child : LayoutLevel)
             @num = num
 
