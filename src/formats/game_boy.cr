@@ -12,7 +12,7 @@ private PALETTE_1BPP = {
     {0x00, 0x00, 0x00}
 }.map { |c| StumpyPNG::RGBA.from_rgb_n(c[0], c[1], c[2], 8) }
 
-private macro define_gb_decode(rows, bytes_per_row)
+private macro define_gb_decode(rows, bytes_per_row, palette)
     def decode(from : IO, canvas : StumpyPNG::Canvas, x : Int32, y : Int32)
         tile = Bytes.new @@bytes_per_tile
         bytes_read = from.read tile
@@ -29,7 +29,7 @@ private macro define_gb_decode(rows, bytes_per_row)
             (x...x + 8).each.zip((0...8).reverse_each).each do |cur_x, low_shift_distance|
                 i = ((byte_1 >> low_shift_distance) & 0b1) {% for i in (2..bytes_per_row) %} | \
                     (((byte_{{i.id}} >> low_shift_distance) << {{i - 1}}) & {{1 << (i - 1)}}) {% end %}
-                canvas[cur_x, cur_y] = PALETTE_2BPP[i]
+                canvas[cur_x, cur_y] = {{palette}}[i]
             end
         end
 
@@ -46,14 +46,14 @@ private class TileFormat_Gb2Bpp < GameBoyTileFormat
     @@description = "Game Boy (Color) tiles at 2 bits per pixel."
     @@bytes_per_tile = 16
 
-    define_gb_decode 8, 2
+    define_gb_decode 8, 2, PALETTE_2BPP
 end
 
 private class TileFormat_Gb1Bpp < GameBoyTileFormat
     @@description = "Game Boy (Color) tiles at 1 bit per pixel."
     @@bytes_per_tile = 8
 
-    define_gb_decode 8, 1
+    define_gb_decode 8, 1, PALETTE_1BPP
 end
 
 private class GameBoyRowFormat < Dazzlie::TileFormat
@@ -65,14 +65,14 @@ private class TileFormat_GbRow2Bpp < GameBoyRowFormat
     @@description = "Game Boy (Color) sub-tile pixel rows at 2 bits per pixel."
     @@bytes_per_tile = 2
 
-    define_gb_decode 1, 2
+    define_gb_decode 1, 2, PALETTE_2BPP
 end
 
 private class TileFormat_GbRow1Bpp < GameBoyRowFormat
     @@description = "Game Boy (Color) sub-tile pixel rows at 1 bit per pixel."
     @@bytes_per_tile = 1
 
-    define_gb_decode 1, 1
+    define_gb_decode 1, 1, PALETTE_1BPP
 end
 
 module Dazzlie
