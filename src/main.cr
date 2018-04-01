@@ -104,10 +104,10 @@ OptionParser.parse! do |parser|
         %(Set the graphics format to use - see the "Formats" section.)
     ) do |f|
         format = f
-        raise ArgumentError.new "Nonexistent format" if !FORMATS.has_key? format
-    rescue ArgumentError
-        error_out %(The format "#{f}" doesn't exist. ) \
-                  %(Run "#{ACTUAL_PROGRAM_NAME} -h" for a list of available formats!)
+        if !FORMATS.has_key? format
+            error_out %(The format "#{f}" doesn't exist. ) \
+                      %(Run "#{ACTUAL_PROGRAM_NAME} -h" for a list of available formats!)
+        end
     end
 
     parser.on(
@@ -115,8 +115,6 @@ OptionParser.parse! do |parser|
         %(Set the layout of the tiles - see the "Layout" section.)
     ) do |l|
         layout = l
-    rescue ArgumentError
-        error_out %(Invalid layout. Run "#{ACTUAL_PROGRAM_NAME} -h" for help!)
     end
 
     parser.on(
@@ -169,6 +167,22 @@ if width
     layout = "H#{width} V"
 elsif height
     layout = "V#{height} H"
+end
+
+input_specified = in_path || !STDIN.tty?
+output_specified = out_path || !STDOUT.tty?
+if !input_specified | !output_specified
+    unspecified = [] of String
+    unspecified.push "input" if !input_specified
+    unspecified.push "output" if !output_specified
+    message = "No #{unspecified.join(" or ")} specified."
+    if !input_specified
+        message += %(\nFor input, either set the "-i" option or pipe data into stdin.)
+    end
+    if !output_specified
+        message += %(\nFor output, either set the "-o" option or pipe data from stdout.)
+    end
+    error_out message
 end
 
 if path = in_path
