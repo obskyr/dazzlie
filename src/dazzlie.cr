@@ -1,6 +1,7 @@
 # Decode tile graphics to PNG.
 
 require "stumpy_png"
+require "./errors"
 require "./format_base"
 require "./formats"
 require "./layout"
@@ -13,13 +14,6 @@ private def round_up(num, multiple)
 end
 
 module Dazzlie
-    # Shim until the Crystal version after 0.24.2 comes out.
-    class NotImplementedError < Exception
-    end
-
-    class GraphicsConversionError < ArgumentError
-    end
-
     class Transcoder
         @tile_format : TileFormat
         @top_level : ChunkLevel
@@ -48,6 +42,43 @@ module Dazzlie
             end
 
             @top_level = prev_level.not_nil!
+        end
+
+        def encode(from : IO, to : IO, num_tiles : Int32?)
+            raise GraphicsConversionError.new "Number of tiles must be greater than 0." if num_tiles && num_tiles <= 0
+
+            begin
+                canvas = StumpyPNG.read from
+            rescue
+                raise GraphicsConversionError.new "Failed to parse PNG."
+            end
+
+            if !num_tiles
+                num_tiles = (canvas.width * canvas.height) / (@tile_format.px_width * @tile_format.px_height)
+            end
+
+            if @top_level.num
+                if !(canvas.width  == @top_level.px_width &&
+                     canvas.height == @top_level.px_height)
+                    raise GraphicsConversionError.new(
+                        "The size of the provided layout " \
+                        "(#{@top_level.px_width}x#{@top_level.px_height}) doesn't match" \
+                        "that of the input PNG (#{canvas.width}x#{canvas.height})."
+                    )
+                end
+            else
+                if !(canvas.width  % @top_level.px_width  == 0 &&
+                     canvas.height % @top_level.px_height == 0)
+                    raise GraphicsConversionError.new(
+                        "When repeated, the provided layout " \
+                        "(#{@top_level.px_width}x#{@top_level.px_height} pixels) " \
+                        "doesn't fit evenly into the input PNG " \
+                        "(#{canvas.width}x#{canvas.height} pixels)."
+                    )
+                end
+            end
+
+            @top_level.encode canvas, to, num_tiles, 0, 0
         end
 
         def decode(from : IO, to : IO, num_tiles : Int32?)
@@ -111,8 +142,13 @@ module Dazzlie
         end
     end
 
-    def decode(from, to, layout, format, num_tiles)
+    def encode(from : IO, to : IO, layout : String, format : String, num_tiles : Int32?)
         transcoder = Transcoder.new format, layout
-        transcoder.decode(from, to, num_tiles)
+        transcoder.encode from, to, num_tiles
+    end
+
+    def decode(from : IO, to : IO, layout : String, format : String, num_tiles : Int32?)
+        transcoder = Transcoder.new format, layout
+        transcoder.decode from, to, num_tiles
     end
 end

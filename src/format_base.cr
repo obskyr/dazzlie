@@ -11,10 +11,17 @@ module Dazzlie
         @@px_width  = 0
         @@px_height = 0
 
-
         def initialize
             @px_width  = @@px_width
             @px_height = @@px_height
+        end
+
+        def encode(canvas : StumpyPNG::Canvas, to : IO, num_tiles : Int32, x : Int32, y : Int32)
+            return self.encode canvas, to, x, y
+        end
+
+        def encode(canvas : StumpyPNG::Canvas, to : IO, x : Int32, y : Int32)
+            raise NotImplementedError.new
         end
 
         def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32, x : Int32, y : Int32)
