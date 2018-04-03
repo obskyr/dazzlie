@@ -19,7 +19,47 @@ INDEX_TO_COLOR_2BPP.each_with_index { |c, i| COLOR_TO_INDEX_2BPP[c] = i}
 private COLOR_TO_INDEX_1BPP = {} of StumpyPNG::RGBA => Int32
 INDEX_TO_COLOR_1BPP.each_with_index { |c, i| COLOR_TO_INDEX_1BPP[c] = i}
 
-private macro define_gb_decode(rows, bytes_per_row, palette)
+private macro define_gb_encode(rows, bytes_per_row)
+    def encode(canvas : StumpyPNG::Canvas, to : IO, x : Int32, y : Int32)
+        return 0 if !canvas.includes_pixel? x, y
+
+        (y...y + {{rows}}).each do |cur_y|
+            {% for i in 1..bytes_per_row %}
+                byte_{{i.id}} = 0_u8
+            {% end %}
+
+            (x...x + 8).each.zip((0...8).reverse_each).each do |cur_x, low_shift_distance|
+                cur_color = canvas.safe_get cur_x, cur_y
+
+                begin
+                    if cur_color
+                        i = cur_color.a == 0 ? 0 : COLOR_TO_INDEX_{{bytes_per_row.id}}BPP[cur_color]
+                    else
+                        i = 0
+                    end
+                rescue KeyError
+                    raise Dazzlie::GraphicsConversionError.new(
+                        "Encountered a pixel with an invalid color for Game Boy graphics."
+                    )
+                end
+
+                byte_1 |= (i & 0b1) << low_shift_distance
+                {% for i in (2..bytes_per_row) %}
+                    # Yay, Crystal handles negative bit shifts properly!
+                    byte_{{i.id}} |= (i & {{1 << (i - 1)}}) << (low_shift_distance - {{i - 1}})
+                {% end %}
+            end
+
+            {% for i in 1..bytes_per_row %}
+                to.write_byte byte_{{i.id}}
+            {% end %}
+        end
+
+        return 1
+    end
+end
+
+private macro define_gb_decode(rows, bytes_per_row)
     def decode(from : IO, canvas : StumpyPNG::Canvas, x : Int32, y : Int32)
         tile = Bytes.new @@bytes_per_tile
         bytes_read = from.read tile
@@ -36,7 +76,7 @@ private macro define_gb_decode(rows, bytes_per_row, palette)
             (x...x + 8).each.zip((0...8).reverse_each).each do |cur_x, low_shift_distance|
                 i = ((byte_1 >> low_shift_distance) & 0b1) {% for i in (2..bytes_per_row) %} | \
                     (((byte_{{i.id}} >> low_shift_distance) << {{i - 1}}) & {{1 << (i - 1)}}) {% end %}
-                canvas[cur_x, cur_y] = {{palette}}[i]
+                canvas[cur_x, cur_y] = INDEX_TO_COLOR_{{bytes_per_row.id}}BPP[i]
             end
         end
 
@@ -53,42 +93,16 @@ private class TileFormat_Gb2Bpp < GameBoyTileFormat
     @@description = "Game Boy (Color) tiles at 2 bits per pixel."
     @@bytes_per_tile = 16
 
-    def encode(canvas : StumpyPNG::Canvas, to : IO, x : Int32, y : Int32)
-        return 0 if !canvas.includes_pixel? x, y
-
-        (y...y + 8).each do |cur_y|
-            byte_1 = 0_u8
-            byte_2 = 0_u8
-
-            (x...x + 8).each.zip((0...8).reverse_each).each do |cur_x, low_shift_distance|
-                cur_color = canvas.safe_get cur_x, cur_y
-                begin
-                    i = cur_color ? COLOR_TO_INDEX_2BPP[cur_color] : 0
-                rescue KeyError
-                    raise Dazzlie::GraphicsConversionError.new(
-                        "Encountered a pixel with an invalid color for Game Boy graphics."
-                    )
-                end
-                byte_1 |= (i & 0b1) << low_shift_distance
-                # Yay, Crystal handles negative bit shifts properly!
-                byte_2 |= (i & 0b10) << (low_shift_distance - 1)
-            end
-
-            to.write_byte byte_1
-            to.write_byte byte_2
-        end
-
-        return 1
-    end
-
-    define_gb_decode 8, 2, INDEX_TO_COLOR_2BPP
+    define_gb_encode 8, 2
+    define_gb_decode 8, 2
 end
 
 private class TileFormat_Gb1Bpp < GameBoyTileFormat
     @@description = "Game Boy (Color) tiles at 1 bit per pixel."
     @@bytes_per_tile = 8
 
-    define_gb_decode 8, 1, INDEX_TO_COLOR_1BPP
+    define_gb_encode 8, 1
+    define_gb_decode 8, 1
 end
 
 private class GameBoyRowFormat < Dazzlie::TileFormat
@@ -100,14 +114,16 @@ private class TileFormat_GbRow2Bpp < GameBoyRowFormat
     @@description = "Game Boy (Color) sub-tile pixel rows at 2 bits per pixel."
     @@bytes_per_tile = 2
 
-    define_gb_decode 1, 2, INDEX_TO_COLOR_2BPP
+    define_gb_encode 1, 2
+    define_gb_decode 1, 2
 end
 
 private class TileFormat_GbRow1Bpp < GameBoyRowFormat
     @@description = "Game Boy (Color) sub-tile pixel rows at 1 bit per pixel."
     @@bytes_per_tile = 1
 
-    define_gb_decode 1, 1, INDEX_TO_COLOR_1BPP
+    define_gb_encode 1, 1
+    define_gb_decode 1, 1
 end
 
 module Dazzlie
