@@ -69,8 +69,8 @@ LAYOUT_INFO =
     To simply encode all tiles in linear order, you can use the layouts "H"
     (all tiles in the image horizontally) or "V" (the same but vertically).
     
-    To simply decode an image of specific dimensions and nothing more,
-    a layout like "H8 V8" (8x8 tiles) can be used.
+    To only decode an image of specific dimensions and nothing more,
+    a layout like "H8 V8" (8x8 tiles, horizontally first) can be used.
 
     The options "-W" / "--width" and "-H" / "--height" are aliases for
     the layouts "H[width] V" and "V[height] H", respectively.)
@@ -90,29 +90,6 @@ OptionParser.parse! do |parser|
         puts
         puts DETAILS
         exit 0
-    end
-
-    parser.on("-i PATH", "Input file. If unspecified, " \
-              "data will be read from stdin.") { |i| in_path = i }
-    parser.on("-o PATH", "Output PNG file. If unspecified, " \
-              "data will be written to stdout.\n") { |o| out_path = o }
-    
-    parser.on(
-        "-p POSITION", "--position POSITION",
-        "The offset to start decoding at. Default 0."
-    ) do |p|
-        offset = p.to_i(prefix: true)
-    rescue ArgumentError
-        error_out "Invalid position. Set it to a number!"
-    end
-
-    parser.on(
-        "-n TILES", "--numtiles TILES",
-        "How many tiles to decode.\n"
-    ) do |n|
-        num_tiles = n.to_i(prefix: true)
-    rescue ArgumentError
-        error_out "Invalid number of tiles. Set it to a number!"
     end
     
     parser.on(
@@ -144,12 +121,35 @@ OptionParser.parse! do |parser|
 
     parser.on(
         "-H HEIGHT", "--height HEIGHT",
-        "Add tiles vertically and wrap to the next column after HEIGHT tiles."
+        "Add tiles vertically and wrap to the next column after HEIGHT tiles.\n"
     ) do |h|
         height = h.to_i(prefix: true)
     rescue ArgumentError
         error_out "Invalid height. Set it to a number!"
     end
+    
+    parser.on(
+        "-p POSITION", "--position POSITION",
+        "The offset to start decoding at. Default 0."
+    ) do |p|
+        offset = p.to_i(prefix: true)
+    rescue ArgumentError
+        error_out "Invalid position. Set it to a number!"
+    end
+
+    parser.on(
+        "-n TILES", "--numtiles TILES",
+        "How many tiles to encode/decode.\n"
+    ) do |n|
+        num_tiles = n.to_i(prefix: true)
+    rescue ArgumentError
+        error_out "Invalid number of tiles. Set it to a number!"
+    end
+
+    parser.on("-i PATH", "Input file. If unset and input is piped, " \
+              "data will be read from stdin.") { |i| in_path = i }
+    parser.on("-o PATH", "Output PNG file. If unset and output is piped, " \
+              "data will be written to stdout.") { |o| out_path = o }
     
     parser.missing_option do |option|
         error_out %(#{option} is missing an argument. Run "#{ACTUAL_PROGRAM_NAME} -h" for help!)
