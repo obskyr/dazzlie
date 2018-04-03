@@ -1,48 +1,3 @@
-private macro transcode_chunk(method)
-    tiles_so_far = 0
-
-    # It feels like there should be a better way to make an infinite
-    # iterator than `1.times.cycle`, but `loop` can't be assigned...
-    times = (num = @num) ? num.times : 1.times.cycle
-    times.each do
-        tiles_left = num_tiles - tiles_so_far
-
-        {% if method.id == "encode" %}
-            cur_tiles = @child.encode(canvas, to, tiles_left, x, y)
-        {% else %}
-            cur_tiles = @child.decode(from, canvas, tiles_left, x, y)
-        {% end %}
-
-        break if cur_tiles == 0
-        tiles_so_far += cur_tiles
-        break if tiles_so_far == num_tiles
-
-        {% if method.id == "encode" %}
-            # Infinite layouts should wrap for convenience.
-            if is_horizontal
-                x += @child.px_width
-                if !num && x == canvas.width
-                    x = 0
-                    y += @child.px_height
-                    break if y == canvas.height
-                end
-            else
-                y += @child.px_height
-                if !num && y == canvas.height
-                    y = 0
-                    x += @child.px_width
-                    break if x == canvas.width
-                end
-            end
-        {% else %}
-            x += @child.px_width  if is_horizontal
-            y += @child.px_height if is_vertical
-        {% end %}
-    end
-
-    return tiles_so_far
-end
-
 module Dazzlie
     private enum Direction
         Horizontal
@@ -95,12 +50,55 @@ module Dazzlie
             @px_height = @child.px_height * vertical_children
         end
 
+        private def each_chunk(canvas, num_tiles, x, y, &block : Int32, Int32, Int32 -> {Int32, Int32, Int32}) : Int32
+            tiles_so_far = 0
+
+            # It feels like there should be a better way to make an infinite
+            # iterator than `1.times.cycle`, but `loop` can't be assigned...
+            times = (num = @num) ? num.times : 1.times.cycle
+            times.each do
+                tiles_left = num_tiles - tiles_so_far
+                cur_tiles, x, y = yield tiles_left, x, y
+                break if cur_tiles == 0
+                tiles_so_far += cur_tiles
+                break if tiles_so_far == num_tiles
+            end
+
+            return tiles_so_far
+        end
+
         def encode(canvas : StumpyPNG::Canvas, to : IO, num_tiles : Int32, x : Int32, y : Int32)
-            transcode_chunk "encode"
+            return each_chunk(canvas, num_tiles, x, y) do |tiles_left, x, y|
+                cur_encoded = @child.encode(canvas, to, tiles_left, x, y)
+
+                # Infinite layouts should wrap for convenience.
+                if is_horizontal
+                    x += @child.px_width
+                    if !num && x == canvas.width
+                        x = 0
+                        y += @child.px_height
+                    end
+                else
+                    y += @child.px_height
+                    if !num && y == canvas.height
+                        y = 0
+                        x += @child.px_width
+                    end
+                end
+
+                {cur_encoded, x, y}
+            end
         end
 
         def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32, x : Int32, y : Int32)
-            transcode_chunk "decode"
+            return each_chunk(canvas, num_tiles, x, y) do |tiles_left, x, y|
+                cur_decoded = @child.decode(from, canvas, tiles_left, x, y)
+
+                x += @child.px_width  if is_horizontal
+                y += @child.px_height if is_vertical
+
+                {cur_decoded, x, y}
+            end
         end
     end
 end
