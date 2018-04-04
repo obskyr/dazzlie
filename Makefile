@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-PROGRAM = dazzlie
+PROGRAM = bin/dazzlie
 
 all: $(PROGRAM)
 
