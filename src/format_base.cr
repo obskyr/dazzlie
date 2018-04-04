@@ -1,3 +1,4 @@
+require "stumpy_png"
 require "./layout"
 
 module Dazzlie
