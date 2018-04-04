@@ -3,6 +3,10 @@ require "./dazzlie"
 
 include Dazzlie
 
+# A macro with run() could get the version from shard.yml, but there are currently
+# some problems with run(): https://github.com/crystal-lang/crystal/issues/5919
+VERSION = "0.1.0-dev"
+
 def error_out(reason : String)
     header = "Error: "
     reason = reason.gsub('\n', "\n#{" " * header.size}")
@@ -87,10 +91,15 @@ end
 OptionParser.parse! do |parser|
     parser.banner = "#{USAGE_LINE}\n\n#{DESCRIPTION}\n\n#{EXAMPLES}\n\nArguments:"
     
-    parser.on("-h", "--help", "Show this help and exit.\n") do
+    parser.on("-h", "--help", "Show this help and exit.") do
         puts parser
         puts
         puts DETAILS
+        exit 0
+    end
+
+    parser.on("-V", "--version", "Print the version of the program and exit.\n") do
+        puts "Dazzlie v#{VERSION}"
         exit 0
     end
     

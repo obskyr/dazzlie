@@ -1,16 +1,14 @@
 # ✨ Dazzlie
 
-**Dazzlie** is a command-line program that lets you convert between various retro tile graphics formats and PNG. That means you can decode tile graphics to a PNG that's easy to work with, and then encode it back to the original format again.
+**Dazzlie** is a command-line program that lets you convert between various retro tile graphics formats and PNG. It lets you do a whole bunch of cool stuff:
+
+* Extract sprites and other graphics from ROMs, and hack them back in just by editing a PNG!
+* Put your graphics into PNGs when writing a retro game in assembly (with [RGBDS](https://github.com/rednex/rgbds), for example)!
+* Make your disassembly tidy, pretty, and easy to understand by putting the game's graphics in PNGs!
 
 One of Dazzlie's main draws is its unique [layout system](#layouts), which lets you lay out the tiles you encode or decode however you want. Never again will you have to edit sprites with their tiles all shuffled around!
 
-Dazzlie lets you do a whole bunch of cool stuff:
-
-* Extract sprites and other graphics from ROMs, and hack them back in just by editing a PNG
-* Put your graphics into PNGs when writing a retro game in assembly (with [RGBDS](https://github.com/rednex/rgbds), for example)
-* Make your disassembly tidy, pretty, and easy to understand by putting the game's graphics in PNGs
-
-Dazzlie is system-agnostic – it can be extended to work with graphics from pretty much any old console you'd like! For a list of currently supported formats, see the *[Formats](#formats)* section.
+Dazzlie is system-agnostic – it can be extended to work with graphics from pretty much any old console you'd like. For a list of currently supported formats, see the *[Formats](#formats)* section.
 
 ## How to install
 
@@ -48,6 +46,7 @@ $ cat howdy.2bpp | dazzlie decode -f gb_2bpp -l "V2 H4 V2 H8 V" > howdy.png
 
 Additional options are:
 * `-h`, `--help`: Show help on how to use Dazzlie. This includes a list of arguments, a list of available formats, and information on layouts.
+* `-V`, `--version`: Print the version of the program.
 * `-W WIDTH`, `--width WIDTH`: Set the width of the graphic and add tiles horizontally. Equivalent to the layout `H[WIDTH] V`. Will continue until the end of the data / image if `--numtiles` isn't set.
 * `-H HEIGHT`, `--height HEIGHT`: Set the height of the graphic and add tiles vertically. Equivalent to the layout `V[HEIGHT] H`. Will consume all the tiles in the input if `--numtiles` isn't set.
 * `-a ADDRESS`, `--address ADDRESS`: When decoding, specify the offset in the input file to start decoding at, and when using `--patch`, the offset in the output file to apply the patch at.
@@ -70,7 +69,7 @@ Dazzlie currently supports tile graphics in the following formats:
 
 ## Layouts
 
-Tiles are often arranged a bit oddly in memory in old games. In order to lay tiles out as you want, you describe layouts using the `-l` or `--layout` option. A Dazzlie layout is expressed as list of direction-length pairs.
+Tiles are often arranged a bit oddly in memory in old games. In order to lay tiles out as you want, you describe layouts using the `-l` or `--layout` option. A Dazzlie layout is expressed as a list of direction-length pairs.
 
 Direction-length pairs looks something like `H8` (8 horizontally) or `V2` (2 vertically). They consist of a direction ("H" or "V" for horizontal or vertical) and then a length. Each pair depends on the previous one - the first pair specifies which direction to add tiles and how many, and the next specifies which direction to stack those "chunks" and how many. The one after that specifies how to stack *those*, and so on.
 
@@ -96,6 +95,6 @@ If you've got any questions – or if you'd just like to talk about whatever, re
 * [@obskyr](https://Twitter.com/obskyr) on Twitter!
 * [E-mail](mailto:powpowd@gmail.com) me!
 
-If you're using Dazzlie for something, I'd love to hear from you.
+For a fast answer, Twitter is your best bet. If you're using Dazzlie for something, I'd love to hear from you!
 
 Enjoy! 😄✨
