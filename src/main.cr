@@ -32,9 +32,9 @@ DESCRIPTION =
 
 EXAMPLES =
 %(Examples:
-    #{ACTUAL_PROGRAM_NAME} decode -f gb_2bpp -l "H4 V4" -p 0x10A8B4 -i crystal.gbc -o igglybuff.png
-    #{ACTUAL_PROGRAM_NAME} encode -f gb_1bpp -W 16 -n 256 -i font.png -o font.2bpp
-    cat howdy.2bpp | #{ACTUAL_PROGRAM_NAME} decode -f gb_2bpp -l "V2 H4 V2 H8 V10" > howdy.png)
+    #{ACTUAL_PROGRAM_NAME} decode -f gb_2bpp -l "H4 V4" -a 0x10A8B4 -i crystal.gbc -o igglybuff.png
+    #{ACTUAL_PROGRAM_NAME} encode -f gb_1bpp -l "H" -n 0xEF -i font.png -o font.2bpp
+    cat howdy.2bpp | #{ACTUAL_PROGRAM_NAME} decode -f gb_2bpp -l "V2 H4 V2 H8 V" > howdy.png)
 
 MAX_FORMAT_NAME_LENGTH = FORMATS.keys.map{ |s| s.size }.max
 FORMATS_INFO = "Formats:\n" + FORMATS.each.join '\n' do |name, cls|
@@ -44,8 +44,8 @@ end
 
 LAYOUT_INFO =
 %(Layout:
-    In order to lay tiles out as you want, you can describe layouts using
-    the "-l" / "--layout" option. Set it to a list of direction-length pairs.
+    In order to lay tiles out as you want, you describe layouts using the
+    "-l" / "--layout" option. Set it to a list of direction-length pairs.
     
     Direction-length pairs look something like "H8" (8 horizontally) or
     "V2" (2 vertically). They consist of a direction ("H" or "V" for
@@ -57,8 +57,8 @@ LAYOUT_INFO =
 
     Optionally, the last pair can leave the length out (just be "H" or "V")
     and thus make the layout "infinite": graphics will be added in that
-    direction until the end of the data/image. When encoding (converting PNG
-    to data), infinite layouts will wrap - when a row/column ends, graphics
+    direction until the end of the input. When encoding (converting PNG to
+    data), infinite layouts will wrap - when a row/column ends, graphics
     will continue to be added from the next one until the end of the image.
 
     For example, "--layout 'V2 H4 V2 V'" will:
@@ -66,7 +66,7 @@ LAYOUT_INFO =
         2. Do that 4 times and add those horizontally into a 4x2 chunk
         3. Do that 2 times and add *those* vertically into a 4x4 chunk
         4. Keep adding 4x4 chunks like that vertically (and, if encoding, go
-           through all the 4-tile-wide columns) until the data/image ends.
+           through all the 4-tile-wide columns) until the end of the input.
     
     To simply encode all tiles in linear order, you can use the layouts "H"
     (all tiles in the image horizontally) or "V" (the same but vertically).
@@ -220,6 +220,10 @@ if !input_specified | !output_specified
         message += %(\nFor output, either set the "-o" option or pipe data from stdout.)
     end
     error_out message
+end
+
+if command != "encode" && patch
+    error_out "--patch can only be used when encoding."
 end
 
 if command == "encode" && offset_specified && !patch
