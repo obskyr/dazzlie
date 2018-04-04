@@ -62,6 +62,11 @@ module Dazzlie
                 break if cur_tiles == 0
                 tiles_so_far += cur_tiles
                 break if tiles_so_far == num_tiles
+                # No break condition for going off the canvas needs to exist
+                # as long as num_tiles is set correctly by the caller and
+                # x, y only goes off the canvas at the end of the data.
+                # As long as those are true, num_tiles will always have been
+                # reached by the time x, y reaches the bottom right corner.
             end
 
             return tiles_so_far

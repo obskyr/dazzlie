@@ -1,4 +1,4 @@
-# Decode tile graphics to PNG.
+# Dazzlie: convert between various tile graphics formats and PNG!
 
 require "stumpy_png"
 require "./errors"
@@ -76,8 +76,11 @@ module Dazzlie
                 raise GraphicsConversionError.new "Failed to parse PNG."
             end
 
+            max_num_tiles = (canvas.width * canvas.height) / (@tile_format.px_width * @tile_format.px_height)
             if !num_tiles
-                num_tiles = (canvas.width * canvas.height) / (@tile_format.px_width * @tile_format.px_height)
+                num_tiles = max_num_tiles
+            elsif num_tiles > max_num_tiles
+                raise GraphicsConversionError.new "Input image contains fewer than #{num_tiles} tiles."
             end
 
             if @top_level.num
