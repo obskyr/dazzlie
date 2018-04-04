@@ -13,6 +13,27 @@ private def round_up(num, multiple)
     return num + multiple - remainder
 end
 
+private def read_tiles(from, tile_format, num_tiles)
+    num_bytes = tile_format.bytes_per_tile * num_tiles
+    bytes = Bytes.new num_bytes
+    bytes_read = from.read bytes
+    
+    # If the bytes read stop in the middle of a tile, the tile
+    # decoder will still be able to read that tile. Therefore,
+    # missing a few bytes of the last tile is acceptable.
+    readable_bytes = round_up bytes_read, tile_format.bytes_per_tile
+    if readable_bytes == 0
+        raise GraphicsConversionError.new "No data to decode."
+    elsif readable_bytes < num_bytes
+        raise GraphicsConversionError.new(
+            "Insufficient input data. At least #{num_tiles} tiles needed; " \
+            "found only #{readable_bytes / tile_format.bytes_per_tile}."
+        )
+    end
+
+    return bytes[0, bytes_read]
+end
+
 module Dazzlie
     class Transcoder
         @tile_format : TileFormat
@@ -45,7 +66,9 @@ module Dazzlie
         end
 
         def encode(from : IO, to : IO, num_tiles : Int32?)
-            raise GraphicsConversionError.new "Number of tiles must be greater than 0." if num_tiles && num_tiles <= 0
+            if num_tiles && num_tiles <= 0
+                raise GraphicsConversionError.new "Number of tiles must be greater than 0."
+            end
 
             begin
                 canvas = StumpyPNG.read from
@@ -82,7 +105,9 @@ module Dazzlie
         end
 
         def decode(from : IO, to : IO, num_tiles : Int32?)
-            raise GraphicsConversionError.new "Number of tiles must be greater than 0." if num_tiles && num_tiles <= 0
+            if num_tiles && num_tiles <= 0
+                raise GraphicsConversionError.new "Number of tiles must be greater than 0."
+            end
 
             # The final dimensions of the image need to be determined differently
             # depending on whether the layout has an infinite dimension or not:
@@ -96,24 +121,14 @@ module Dazzlie
                     raise GraphicsConversionError.new "Layout dimensions too small to fit #{num_tiles} tiles."
                 end
                 num_tiles = max_num_tiles if !num_tiles
+
+                from = IO::Memory.new read_tiles(from, @tile_format, num_tiles)
             else
-                original_from = from
                 if num_tiles
                     num_pixels = @tile_format.px_width * @tile_format.px_height * num_tiles
-                    num_bytes = @tile_format.bytes_per_tile * num_tiles
-                    bytes = Bytes.new num_bytes
-                    bytes_read = original_from.read bytes
-                    
-                    # If the bytes read stop in the middle of a tile, the tile
-                    # decoder will still be able to read that tile. Therefore,
-                    # missing a few bytes of the last tile is acceptable.
-                    readable_bytes = round_up bytes_read, @tile_format.bytes_per_tile
-                    if readable_bytes < num_bytes
-                        raise GraphicsConversionError.new "There are less than #{num_tiles} tiles in the input data."
-                    end
-
-                    from = IO::Memory.new bytes[0, bytes_read]
+                    from = IO::Memory.new read_tiles(from, @tile_format, num_tiles)
                 else
+                    original_from = from
                     from = IO::Memory.new
                     IO.copy original_from, from
                     bytes_read = from.tell
