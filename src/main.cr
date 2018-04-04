@@ -10,16 +10,18 @@ def error_out(reason : String)
     exit 1
 end
 
-in_path = nil
-out_path = nil
-
-offset = 0
-num_tiles = nil
-
 format = nil
 layout = nil
 width = nil
 height = nil
+
+offset_specified = false
+offset = 0
+num_tiles = nil
+patch = false
+
+in_path = nil
+out_path = nil
 
 ACTUAL_PROGRAM_NAME = PROGRAM_NAME.split('/')[-1]
 USAGE_LINE = "Usage: #{ACTUAL_PROGRAM_NAME} <encode | decode> <-f format> <-l layout | -W width | -H height> [other options...]"
@@ -129,21 +131,29 @@ OptionParser.parse! do |parser|
     end
     
     parser.on(
-        "-p POSITION", "--position POSITION",
-        "The offset to start decoding at. Default 0."
-    ) do |p|
-        offset = p.to_i(prefix: true)
+        "-a ADDRESS", "--address ADDRESS",
+        %(The offset to start decoding at, or with "--patch", where to patch. Default 0.)
+    ) do |a|
+        offset_specified = true
+        offset = a.to_i(prefix: true)
     rescue ArgumentError
-        error_out "Invalid position. Set it to a number!"
+        error_out "Invalid address. Set it to a number!"
     end
 
     parser.on(
         "-n TILES", "--numtiles TILES",
-        "How many tiles to encode/decode.\n"
+        "How many tiles to encode/decode."
     ) do |n|
         num_tiles = n.to_i(prefix: true)
     rescue ArgumentError
         error_out "Invalid number of tiles. Set it to a number!"
+    end
+
+    parser.on(
+        "--patch",
+        "Only available when encoding. Overwrite part of an existing file.\n"
+    ) do
+        patch = true
     end
 
     parser.on("-i PATH", "Input file. If unset and input is piped, " \
@@ -177,7 +187,7 @@ if !format
 end
 
 if !(layout || width || height)
-    error_out %(No dimensions set! Set either "--layout", "--width", or "--height".)
+    error_out %(No dimensions set! Set either "-l", "--layout", "-W", "--width", "-H", or "--height".)
 end
 
 if layout && (width || height) 
@@ -212,6 +222,10 @@ if !input_specified | !output_specified
     error_out message
 end
 
+if command == "encode" && offset_specified && !patch
+    error_out %(Can't specify offset to encode to without using the "--patch" option.)
+end
+
 if path = in_path
     begin
         in_io = File.open path, "rb"
@@ -223,19 +237,45 @@ else
 end
 
 if path = out_path
-    begin
-        out_io = File.open path, "wb"
-    rescue Errno
-        error_out "Couldn't open #{out_path} for writing."
+    if patch
+        begin
+            out_io = File.open path, "r+"
+        rescue Errno
+            error_out "Couldn't open #{out_path} for patching. Make sure it exists!"
+        end
+    else
+        begin
+            out_io = File.open path, "wb"
+        rescue Errno
+            error_out "Couldn't open #{out_path} for writing."
+        end
     end
 else
+    error_out %(Can't use "--patch" without an output file.) if patch
     STDOUT.flush_on_newline = false
     out_io = STDOUT
 end
 
 begin
     if command == "encode"
-        encode(in_io, out_io, layout.not_nil!, format.not_nil!, num_tiles)
+        if patch
+            out_io.seek 0, IO::Seek::End
+            file_size = out_io.tell
+            if offset >= file_size
+                error_out "The supplied address is beyond the end of the file."
+            end
+            intermediary = IO::Memory.new
+            
+            encode(in_io, intermediary, layout.not_nil!, format.not_nil!, num_tiles)
+            
+            if offset + intermediary.size >= file_size
+                error_out "The encoded data doesn't fit within the file."
+            end
+            out_io.seek offset
+            out_io.write intermediary.to_slice
+        else
+            encode(in_io, out_io, layout.not_nil!, format.not_nil!, num_tiles)
+        end
     else
         begin
             in_io.skip offset
