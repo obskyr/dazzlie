@@ -84,7 +84,7 @@ private macro define_gb_decode(rows, bytes_per_row)
     end
 end
 
-private class GameBoyTileFormat < Dazzlie::TileFormat
+private abstract class GameBoyTileFormat < Dazzlie::TileFormat
     @@px_width  = 8
     @@px_height = 8
 end
@@ -105,7 +105,7 @@ private class TileFormat_Gb1Bpp < GameBoyTileFormat
     define_gb_decode 8, 1
 end
 
-private class GameBoyRowFormat < Dazzlie::TileFormat
+private abstract class GameBoyRowFormat < Dazzlie::TileFormat
     @@px_width  = 8
     @@px_height = 1
 end

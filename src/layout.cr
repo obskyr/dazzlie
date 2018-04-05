@@ -4,7 +4,7 @@ module Dazzlie
         Vertical
     end
 
-    private class LayoutLevel
+    private abstract class LayoutLevel
         getter direction : Direction
         getter num : Int32?
         getter px_width  : Int32
@@ -27,13 +27,8 @@ module Dazzlie
             raise NotImplementedError.new
         end
 
-        def encode(canvas : StumpyPNG::Canvas, to : IO, num_tiles : Int32, x : Int32, y : Int32)
-            raise NotImplementedError.new
-        end
-
-        def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32, x : Int32, y : Int32)
-            raise NotImplementedError.new
-        end
+        abstract def encode(canvas : StumpyPNG::Canvas, to : IO, num_tiles : Int32, x : Int32, y : Int32)
+        abstract def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32, x : Int32, y : Int32)
     end
 
     private class ChunkLevel < LayoutLevel

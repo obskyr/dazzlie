@@ -2,7 +2,7 @@ require "stumpy_png"
 require "./layout"
 
 module Dazzlie
-    class TileFormat < LayoutLevel
+    abstract class TileFormat < LayoutLevel
         @direction = Direction::Horizontal
         @num = 1
 
@@ -21,17 +21,12 @@ module Dazzlie
             return self.encode canvas, to, x, y
         end
 
-        def encode(canvas : StumpyPNG::Canvas, to : IO, x : Int32, y : Int32)
-            raise NotImplementedError.new
-        end
-
         def decode(from : IO, canvas : StumpyPNG::Canvas, num_tiles : Int32, x : Int32, y : Int32)
             return self.decode from, canvas, x, y
         end
 
-        def decode(from : IO, canvas : StumpyPNG::Canvas, x : Int32, y : Int32)
-            raise NotImplementedError.new
-        end
+        abstract def encode(canvas : StumpyPNG::Canvas, to : IO, x : Int32, y : Int32)
+        abstract def decode(from : IO, canvas : StumpyPNG::Canvas, x : Int32, y : Int32)
 
         def self.description
             return @@description
