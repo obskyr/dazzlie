@@ -63,9 +63,11 @@ Dazzlie currently supports tile graphics in the following formats:
     * `gb_2bpp`: tiles at 2 bits per pixel.
     * `gb_1bpp`: tiles at 1 bit per pixel.
     * `gb_rows_2bpp`: sub-tile 8×1 rows at 2 bits per pixel. Useful for graphics with heights that don't align to tiles.
-    * `gb_rows_2bpp`: sub-tile 8×1 rows at 1 bit per pixel.
-
-…That's only formats for *one* system at the moment, isn't it. Dazzlie is easily extensible, though! If there's a format you're missing, fork this repo, [add your own format](src/formats), and make a pull request! If you don't feel up to coding it yourself, you can [open an issue about it](https://github.com/obskyr/khinsider/issues) and I might just implement it for you.
+    * `gb_rows_1bpp`: sub-tile 8×1 rows at 1 bit per pixel.
+* NES / Famicom
+    * `nes_2bpp`: tiles at 2 bits per pixel.
+    * `nes_1bpp`: tiles at 1 bit per pixel.
+…That's only formats for *two* systems at the moment, isn't it. Dazzlie is easily extensible, though! If there's a format you're missing, fork this repo, [add your own format](src/formats), and make a pull request! If you don't feel up to coding it yourself, you can [open an issue about it](https://github.com/obskyr/khinsider/issues) and I might just implement it for you.
 
 ## Layouts
 
