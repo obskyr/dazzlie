@@ -265,8 +265,14 @@ if path = out_path
     end
 else
     error_out %(Can't use "--patch" without an output file.) if patch
-    STDOUT.flush_on_newline = false
     out_io = STDOUT
+    if out_io.responds_to? :"flush_on_newline="
+        # Crystal < 0.28.0
+        out_io.flush_on_newline = false
+    else
+        # Crystal >= 0.28.0
+        out_io.sync = false
+    end
 end
 
 begin
