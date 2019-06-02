@@ -1,23 +1,23 @@
 require "../format_base"
 require "../errors"
 
-private INDEX_TO_COLOR_2BPP = {
+private GB_INDEX_TO_COLOR_2BPP = {
     {0xFF, 0xFF, 0xFF},
     {0xA9, 0xA9, 0xA9},
     {0x55, 0x55, 0x55},
     {0x00, 0x00, 0x00}
 }.map { |c| StumpyPNG::RGBA.from_rgb_n(c[0], c[1], c[2], 8) }
 
-private INDEX_TO_COLOR_1BPP = {
+private GB_INDEX_TO_COLOR_1BPP = {
     {0xFF, 0xFF, 0xFF},
     {0x00, 0x00, 0x00}
 }.map { |c| StumpyPNG::RGBA.from_rgb_n(c[0], c[1], c[2], 8) }
 
-private COLOR_TO_INDEX_2BPP = {} of StumpyPNG::RGBA => Int32
-INDEX_TO_COLOR_2BPP.each_with_index { |c, i| COLOR_TO_INDEX_2BPP[c] = i}
+private GB_COLOR_TO_INDEX_2BPP = {} of StumpyPNG::RGBA => Int32
+GB_INDEX_TO_COLOR_2BPP.each_with_index { |c, i| GB_COLOR_TO_INDEX_2BPP[c] = i}
 
-private COLOR_TO_INDEX_1BPP = {} of StumpyPNG::RGBA => Int32
-INDEX_TO_COLOR_1BPP.each_with_index { |c, i| COLOR_TO_INDEX_1BPP[c] = i}
+private GB_COLOR_TO_INDEX_1BPP = {} of StumpyPNG::RGBA => Int32
+GB_INDEX_TO_COLOR_1BPP.each_with_index { |c, i| GB_COLOR_TO_INDEX_1BPP[c] = i}
 
 private macro define_gb_encode(rows, bytes_per_row)
     def encode(canvas : StumpyPNG::Canvas, to : IO, x : Int32, y : Int32)
@@ -33,7 +33,7 @@ private macro define_gb_encode(rows, bytes_per_row)
 
                 begin
                     if cur_color
-                        i = cur_color.a == 0 ? 0 : COLOR_TO_INDEX_{{bytes_per_row.id}}BPP[cur_color]
+                        i = cur_color.a == 0 ? 0 : GB_COLOR_TO_INDEX_{{bytes_per_row.id}}BPP[cur_color]
                     else
                         i = 0
                     end
@@ -76,7 +76,7 @@ private macro define_gb_decode(rows, bytes_per_row)
             (x...x + 8).each.zip((0...8).reverse_each).each do |cur_x, low_shift_distance|
                 i = ((byte_1 >> low_shift_distance) & 0b1) {% for i in (2..bytes_per_row) %} | \
                     (((byte_{{i.id}} >> low_shift_distance) << {{i - 1}}) & {{1 << (i - 1)}}) {% end %}
-                canvas[cur_x, cur_y] = INDEX_TO_COLOR_{{bytes_per_row.id}}BPP[i]
+                canvas[cur_x, cur_y] = GB_INDEX_TO_COLOR_{{bytes_per_row.id}}BPP[i]
             end
         end
 
