@@ -69,6 +69,7 @@ Dazzlie currently supports tile graphics in the following formats:
     * `nes_1bpp`: tiles at 1 bit per pixel.
 * Generic
     * `simple_8bit_4bpp`: byte-by-byte graphics at 4 bits per pixel; first pixel low.
+
 …That's only formats for *two* systems at the moment, isn't it. Dazzlie is easily extensible, though! If there's a format you're missing, fork this repo, [add your own format](src/formats), and make a pull request! If you don't feel up to coding it yourself, you can [open an issue about it](https://github.com/obskyr/khinsider/issues) and I might just implement it for you.
 
 ## Layouts
