@@ -71,6 +71,12 @@ LAYOUT_INFO =
         3. Do that 2 times and add *those* vertically into a 4x4 chunk
         4. Keep adding 4x4 chunks like that vertically (and, if encoding, go
            through all the 4-tile-wide columns) until the end of the input.
+
+    As a bonus, you can put a period after a pair to mark that as the "tile"
+    level, which lets you count graphics larger than base-level tiles using
+    --numtiles. For instance, supposing that you're using an 8x8-pixel tile
+    format, "--layout 'H2 V2. H' --numtiles 4" will process four 16x16 chunks
+    as opposed to only four 8x8 tiles.
     
     To simply encode all tiles in linear order, you can use the layouts "H"
     (all tiles in the image horizontally) or "V" (the same but vertically).
@@ -151,7 +157,7 @@ OptionParser.parse! do |parser|
 
     parser.on(
         "-n TILES", "--numtiles TILES",
-        "How many tiles to encode/decode."
+        "How many tiles to encode/decode. Usable in conjunction with \".\" in layouts."
     ) do |n|
         num_tiles = n.to_i(prefix: true)
     rescue ArgumentError

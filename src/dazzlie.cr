@@ -13,7 +13,7 @@ private def round_up(num, multiple)
     return num + multiple - remainder
 end
 
-private def read_tiles(from, tile_format, num_tiles)
+private def read_tiles(from, tile_format, num_tiles, num_tiles_multiplier, marked_level)
     num_bytes = tile_format.bytes_per_tile * num_tiles
     bytes = Bytes.new num_bytes
     bytes_read = from.read bytes
@@ -25,9 +25,12 @@ private def read_tiles(from, tile_format, num_tiles)
     if readable_bytes == 0
         raise GraphicsConversionError.new "No data to decode."
     elsif readable_bytes < num_bytes
+        nominal_num_tiles = num_tiles / num_tiles_multiplier
+        nominal_num_tiles_found = (readable_bytes / tile_format.bytes_per_tile) / num_tiles_multiplier
         raise GraphicsConversionError.new(
-            "Insufficient input data. At least #{num_tiles} tiles needed; " \
-            "found only #{readable_bytes / tile_format.bytes_per_tile}."
+            "Insufficient input data. At least #{nominal_num_tiles} " \
+            "#{marked_level.px_width}x#{marked_level.px_height} tiles needed; " \
+            "found only #{nominal_num_tiles_found}."
         )
     end
 
@@ -38,28 +41,48 @@ module Dazzlie
     class Transcoder
         @tile_format : TileFormat
         @top_level : ChunkLevel
+        @marked_level : LayoutLevel
+        @num_tiles_multiplier : Int32
 
         def initialize(format : String, layout : String)
             if !FORMATS.has_key? format
                 raise GraphicsConversionError.new %(Format "#{format}" does not exist.)
             end
-            if !/^\s*((?:H|V)[0-9]*\s*)+$/i.match layout
+            if !/^\s*((?:H|V)[0-9]*\.?\s*)+$/i.match layout
                 raise GraphicsConversionError.new "Invalid layout string format."
             end
 
             @tile_format = FORMATS[format].new
+            @marked_level = @tile_format
+            @num_tiles_multiplier = 1
 
-            matches = layout.scan /(H|V)([0-9]*)/i
+            matches = layout.scan /(H|V)([0-9]*)(\.?)/i
+            cur_multiplier = 1
             prev_level = nil
             matches.each do |m|
                 direction = m[1].upcase == "H" ? Direction::Horizontal : Direction::Vertical
                 num = m[2].to_i?
-
+                
                 if num == 0
                     raise GraphicsConversionError.new "Invalid layout. 0 is not a valid length."
                 end
 
                 prev_level = ChunkLevel.new direction, num, prev_level || @tile_format
+
+                cur_multiplier *= num if num
+                if !m[3].empty?
+                    if @marked_level != @tile_format
+                        raise GraphicsConversionError.new "Invalid layout. A layout may contain at most one period."
+                    end
+                    if !num
+                        raise GraphicsConversionError.new(
+                            "Invalid layout. An infinite level cannot be " \
+                            "marked as the tile level."
+                        )
+                    end
+                    @marked_level = prev_level
+                    @num_tiles_multiplier = cur_multiplier
+                end
             end
 
             @top_level = prev_level.not_nil!
@@ -69,6 +92,8 @@ module Dazzlie
             if num_tiles && num_tiles <= 0
                 raise GraphicsConversionError.new "Number of tiles must be greater than 0."
             end
+            nominal_num_tiles = num_tiles
+            num_tiles *= @num_tiles_multiplier if num_tiles
 
             begin
                 canvas = StumpyPNG.read from
@@ -80,7 +105,10 @@ module Dazzlie
             if !num_tiles
                 num_tiles = max_num_tiles
             elsif num_tiles > max_num_tiles
-                raise GraphicsConversionError.new "Input image contains fewer than #{num_tiles} tiles."
+                raise GraphicsConversionError.new(
+                    "Input image contains fewer than #{nominal_num_tiles} " \
+                    "#{@marked_level.px_width}x#{@marked_level.px_height} tiles."
+                )
             end
 
             if @top_level.num
@@ -111,6 +139,8 @@ module Dazzlie
             if num_tiles && num_tiles <= 0
                 raise GraphicsConversionError.new "Number of tiles must be greater than 0."
             end
+            nominal_num_tiles = num_tiles
+            num_tiles *= @num_tiles_multiplier if num_tiles
 
             # The final dimensions of the image need to be determined differently
             # depending on whether the layout has an infinite dimension or not:
@@ -121,15 +151,20 @@ module Dazzlie
                 height = @top_level.px_height
                 max_num_tiles = (width * height) / (@tile_format.px_width * @tile_format.px_height)
                 if num_tiles && num_tiles > max_num_tiles
-                    raise GraphicsConversionError.new "Layout dimensions too small to fit #{num_tiles} tiles."
+                    raise GraphicsConversionError.new(
+                        "Layout dimensions too small to fit #{nominal_num_tiles} " \
+                        "#{@marked_level.px_width}x#{@marked_level.px_height} tiles."
+                    )
                 end
                 num_tiles = max_num_tiles if !num_tiles
 
-                from = IO::Memory.new read_tiles(from, @tile_format, num_tiles)
+                from = IO::Memory.new read_tiles(from, @tile_format, num_tiles, 
+                                                 @num_tiles_multiplier, @marked_level)
             else
                 if num_tiles
                     num_pixels = @tile_format.px_width * @tile_format.px_height * num_tiles
-                    from = IO::Memory.new read_tiles(from, @tile_format, num_tiles)
+                    from = IO::Memory.new read_tiles(from, @tile_format, num_tiles,
+                                                     @num_tiles_multiplier, @marked_level)
                 else
                     original_from = from
                     from = IO::Memory.new
