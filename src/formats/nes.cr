@@ -75,12 +75,12 @@ private macro define_nes_decode(bytes_per_row)
     end
 end
 
-private abstract class NESTileFormat < Dazzlie::TileFormat
+private abstract class NesTileFormat < Dazzlie::TileFormat
     @@px_width  = 8
     @@px_height = 8
 end
 
-private class TileFormat_NES2Bpp < NESTileFormat
+private class TileFormat_Nes2Bpp < NesTileFormat
     @@description = "NES tiles at 2 bits per pixel."
     @@bytes_per_tile = 16
 
@@ -88,7 +88,7 @@ private class TileFormat_NES2Bpp < NESTileFormat
     define_nes_decode 2
 end
 
-private class TileFormat_NES1Bpp < NESTileFormat
+private class TileFormat_Nes1Bpp < NesTileFormat
     @@description = "NES tiles at 1 bit per pixel."
     @@bytes_per_tile = 8
 
@@ -98,9 +98,9 @@ end
 
 module Dazzlie
     private module Formats
-        NES2Bpp = TileFormat_NES2Bpp
-        NES1Bpp = TileFormat_NES1Bpp
-        NESRow2Bpp = TileFormat_NESRow2Bpp
-        NESRow1Bpp = TileFormat_NESRow1Bpp
+        Nes2Bpp = TileFormat_Nes2Bpp
+        Nes1Bpp = TileFormat_Nes1Bpp
+        NesRow2Bpp = TileFormat_NesRow2Bpp
+        NesRow1Bpp = TileFormat_NesRow1Bpp
     end
 end
