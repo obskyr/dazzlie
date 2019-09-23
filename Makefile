@@ -19,5 +19,5 @@ $(PROGRAM): src/main.cr lib $(CRYSTAL_FILES)
 	crystal build -o $@ $<
 
 lib: shard.yml shard.lock
-	crystal deps install
+	shards install
 	@touch lib
