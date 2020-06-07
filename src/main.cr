@@ -94,7 +94,7 @@ if ARGV.size == 0
     exit 1
 end
 
-OptionParser.parse! do |parser|
+OptionParser.parse(ARGV) do |parser|
     parser.banner = "#{USAGE_LINE}\n\n#{DESCRIPTION}\n\n#{EXAMPLES}\n\nArguments:"
     
     parser.on("-h", "--help", "Show this help and exit.") do
@@ -248,7 +248,7 @@ end
 if path = in_path
     begin
         in_io = File.open path, "rb"
-    rescue Errno
+    rescue File::Error
         error_out "Couldn't open #{in_path} for reading."
     end
 else
@@ -259,13 +259,13 @@ if path = out_path
     if patch
         begin
             out_io = File.open path, "r+"
-        rescue Errno
+        rescue File::Error
             error_out "Couldn't open #{out_path} for patching. Make sure it exists!"
         end
     else
         begin
             out_io = File.open path, "wb"
-        rescue Errno
+        rescue File::Error
             error_out "Couldn't open #{out_path} for writing."
         end
     end

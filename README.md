@@ -12,7 +12,7 @@ Dazzlie is system-agnostic – it can be extended to work with graphics from pre
 
 ## How to install
 
-Dazzlie is written in [Crystal](https://crystal-lang.org/), so first of all you'll need to install the Crystal compiler. Check out [the official installation instructions](https://crystal-lang.org/docs/installation/) if you don't already have it! At the time of writing, Crystal isn't available natively for Windows, so if you're on Windows you'll need to use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (available on Windows 10).
+Dazzlie is written in [Crystal](https://crystal-lang.org/), so first of all you'll need to install the Crystal compiler. Check out [the official installation instructions](https://crystal-lang.org/docs/installation/) if you don't already have it! Dazzlie is confirmed to work on Crystal 0.34.0, and may work on newer versions as well. At the time of writing, Crystal isn't available natively for Windows, so if you're on Windows you'll need to use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (available on Windows 10).
 
 Once that's all done, simply clone the Dazzlie repo and run `make install`:
 

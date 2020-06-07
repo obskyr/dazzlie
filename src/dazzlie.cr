@@ -25,8 +25,8 @@ private def read_tiles(from, tile_format, num_tiles, num_tiles_multiplier, marke
     if readable_bytes == 0
         raise GraphicsConversionError.new "No data to decode."
     elsif readable_bytes < num_bytes
-        nominal_num_tiles = num_tiles / num_tiles_multiplier
-        nominal_num_tiles_found = (readable_bytes / tile_format.bytes_per_tile) / num_tiles_multiplier
+        nominal_num_tiles = num_tiles // num_tiles_multiplier
+        nominal_num_tiles_found = (readable_bytes // tile_format.bytes_per_tile) // num_tiles_multiplier
         raise GraphicsConversionError.new(
             "Insufficient input data. At least #{nominal_num_tiles} " \
             "#{marked_level.px_width}x#{marked_level.px_height} tiles needed; " \
@@ -101,7 +101,7 @@ module Dazzlie
                 raise GraphicsConversionError.new "Failed to parse PNG."
             end
 
-            max_num_tiles = (canvas.width * canvas.height) / (@tile_format.px_width * @tile_format.px_height)
+            max_num_tiles = (canvas.width * canvas.height) // (@tile_format.px_width * @tile_format.px_height)
             if !num_tiles
                 num_tiles = max_num_tiles
             elsif num_tiles > max_num_tiles
@@ -149,7 +149,7 @@ module Dazzlie
             if @top_level.num
                 width  = @top_level.px_width
                 height = @top_level.px_height
-                max_num_tiles = (width * height) / (@tile_format.px_width * @tile_format.px_height)
+                max_num_tiles = (width * height) // (@tile_format.px_width * @tile_format.px_height)
                 if num_tiles && num_tiles > max_num_tiles
                     raise GraphicsConversionError.new(
                         "Layout dimensions too small to fit #{nominal_num_tiles} " \
@@ -170,7 +170,7 @@ module Dazzlie
                     from = IO::Memory.new
                     IO.copy original_from, from
                     bytes_read = from.tell
-                    num_tiles = (bytes_read + @tile_format.bytes_per_tile - 1) / @tile_format.bytes_per_tile
+                    num_tiles = (bytes_read + @tile_format.bytes_per_tile - 1) // @tile_format.bytes_per_tile
                     num_pixels = num_tiles * @tile_format.px_width * @tile_format.px_height
 
                     if num_pixels == 0
@@ -183,8 +183,8 @@ module Dazzlie
                 pixels_in_top_chunk = @top_level.px_width * @top_level.px_height
                 num_pixels = round_up num_pixels, pixels_in_top_chunk
 
-                width  = (@top_level.is_horizontal) ? num_pixels / @top_level.px_height : @top_level.px_width
-                height = (@top_level.is_vertical)   ? num_pixels / @top_level.px_width  : @top_level.px_height
+                width  = (@top_level.is_horizontal) ? num_pixels // @top_level.px_height : @top_level.px_width
+                height = (@top_level.is_vertical)   ? num_pixels // @top_level.px_width  : @top_level.px_height
             end
 
             canvas = StumpyPNG::Canvas.new width, height
