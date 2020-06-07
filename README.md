@@ -25,7 +25,7 @@ And presto! You'll be able to run `dazzlie` anywhere you want. If you just want 
 
 ## How to use
 
-The commands you'll be using are `dazzlie encode` (PNG to tile data) and `dazzlie decode` (tile data to PNG). When you convert something, you need to specify a format (`-f` or `--format`) and a [layout](#layouts) (`-l` or `--layout`, or the width or height options) You can then either specify input and output files with `-i` and `-o`, or you can pipe data into stdin and out from stdout.
+The commands you'll be using are `dazzlie encode` (PNG to tile data) and `dazzlie decode` (tile data to PNG). When you convert something, you need to specify a format (`-f` or `--format`) and a [layout](#layouts) (`-l` or `--layout`, or the width or height options). You can then either specify input and output files with `-i` and `-o`, or you can pipe data into stdin and out from stdout.
 
 Here are some examples:
 
@@ -90,6 +90,15 @@ Here are examples of a few simple, useful layouts, for when you don't need anyth
 * `"H"` or  `"V"`: When encoding, these let you simply encode all tiles in left-to-right or top-to-bottom order, going through all the rows or columns in the image.
 * `"H8 V8"` or `"V8 H8"`: These let you simply decode an image of a fixed size. `"H8 V8"` adds tiles in rows; `"V8 H8"` adds them in columns.
 * `"H4 V4 V8"`: Useful for when animations are stored as contiguous sprites in memory. This one would be 8 frames of a 4×4-tile sprite, arranged vertically in the PNG.
+
+# Roadmap
+
+Dazzlie is still pre-1.0.0, so a few features are planned but not yet supported:
+
+* Palettes!
+* Direct-color images, perhaps!
+<!-- * Bitplanes are possible, probably, but require seeking back and forth – perhaps a feature to rearrange bytes in advance would make this faster. Or maybe not! -->
+<!-- * Perhaps there's a way to make the structure of extensions less cumbersome and less macro-heavy: some utility functions or extensible base classes could go a long way. -->
 
 # Contact
 
